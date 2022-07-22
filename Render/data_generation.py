@@ -13,7 +13,7 @@ import glob
 import pickle
 from tqdm import trange
 from bpy_render import render_ply
-from pytorch3d.transforms import euler_angles_to_matrix, matrix_to_euler_angles
+from pytorch3d.transforms import euler_angles_to_matrix, matrix_to_euler_angles, rotation_6d_to_matrix
 
 sys.path.append('../')
 from core.utils import (
@@ -22,8 +22,6 @@ from core.utils import (
     get_single_bop_annotation,
     remap_pose,
 )
-from transform_utils import compute_rotation_matrix_from_ortho6d
-
 np.set_printoptions(threshold=np.inf)
 np.random.seed(0)
 
@@ -174,7 +172,7 @@ def reference_generation(cfg, mode, num):
     print("Number of rendered images:", num)
     samples = sample_6d(num)
 
-    sample_R = compute_rotation_matrix_from_ortho6d(samples)
+    sample_R = rotation_6d_to_matrix(samples)
     sample_euler = matrix_to_euler_angles(sample_R, 'ZXZ') * 180. / np.pi
     sample_pose = [np.concatenate([sample_euler[i].numpy(), [0, 0, cfg["RENDER"]["CAM_DIST"]]], axis=-1) \
     for i in range(sample_euler.shape[0])]

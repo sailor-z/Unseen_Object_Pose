@@ -12,7 +12,7 @@ from dataset_linemod import LINEMOD_SO3 as LINEMOD
 from dataset_linemod import ref_loader_so3 as ref_loader
 
 from pytorch3d.ops import sample_farthest_points
-from core.model import RetrievalNet_FPN as Model
+from core.model import RetrievalNet as Model
 from core.model import Sim_predictor as Predictor
 from core.utils import geodesic_distance
 

@@ -11,14 +11,12 @@ import cv2
 from tqdm import tqdm
 import argparse
 from tqdm import trange
-from torchvision.transforms import functional as TF
 
 from test_linemod_so3 import val
-from pytorch3d.transforms import matrix_to_euler_angles
 from core.dataset_linemod import LINEMOD_SO3 as LINEMOD
 from core.loss import weighted_infoNCE_loss_func
 from core.utils import load_checkpoint
-from core.model import RetrievalNet_FPN as Model
+from core.model import RetrievalNet as Model
 from core.model import Sim_predictor as Predictor
 
 np.set_printoptions(threshold=np.inf)
@@ -144,5 +142,5 @@ if __name__ == '__main__':
         torch.cuda.set_device(device)
     else:
         device = torch.device("cpu")
-        
+
     train(cfg, device)
