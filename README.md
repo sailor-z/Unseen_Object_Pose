@@ -1,4 +1,4 @@
-# Fusing Local Similarities for Retrieval-based 3D Orientation Estimation of Unseen Objects 
+# Fusing Local Similarities for Retrieval-based 3D Orientation Estimation of Unseen Objects
 PyTorch implementation of Paper "Fusing Local Similarities for Retrieval-based 3D Orientation Estimation of Unseen Objects" (ECCV 2022)
 * [[project page](https://sailor-z.github.io/projects/Unseen_Object_Pose.html)]
 * [[paper](https://arxiv.org/abs/2203.08472)]
@@ -24,5 +24,11 @@ Our code has been tested with the the following dependencies: Python 3.7.11, Pyt
     conda install -c jewfrocuban python-blender
     pip install opencv-python
 
-    
 # Data Processing
+First please download the LineMOD dataset we used in our experiments from [LineMOD](https://sailor-z.github.io/projects/Unseen_Object_Pose.html). The data should be organized as
+
+    UnseenObjectPose
+    |-- data
+        |-- linemod_zhs
+            |-- models
+            |-- real
