@@ -130,7 +130,7 @@ def train(cfg, device):
                 f.write(text)
         else:
             with open(logname, 'a') as f:
-                text = str('Epoch: %03d || train_loss %.4f || train_pose_loss %.4f \n' % (epoch, loss))
+                text = str('Epoch: %03d || train_loss %.4f \n' % (epoch, loss))
                 f.write(text)
 
 if __name__ == '__main__':
