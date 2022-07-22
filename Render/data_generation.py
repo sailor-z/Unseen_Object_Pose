@@ -42,22 +42,22 @@ def sample_6d(num):
 
 def src_image_generate(cfg, mode):
     if mode == 'test':
-        seq_paths = ['../data/linemod/000001_test.txt','../data/linemod/000002_test.txt',\
-        '../data/linemod/000004_test.txt','../data/linemod/000005_test.txt',\
-        '../data/linemod/000006_test.txt','../data/linemod/000008_test.txt',\
-        '../data/linemod/000009_test.txt','../data/linemod/000010_test.txt',\
-        '../data/linemod/000011_test.txt','../data/linemod/000012_test.txt',\
-        '../data/linemod/000013_test.txt','../data/linemod/000014_test.txt',\
-        '../data/linemod/000015_test.txt'\
+        seq_paths = ['../data/linemod_zhs/000001_test.txt','../data/linemod_zhs/000002_test.txt',\
+        '../data/linemod_zhs/000004_test.txt','../data/linemod_zhs/000005_test.txt',\
+        '../data/linemod_zhs/000006_test.txt','../data/linemod_zhs/000008_test.txt',\
+        '../data/linemod_zhs/000009_test.txt','../data/linemod_zhs/000010_test.txt',\
+        '../data/linemod_zhs/000011_test.txt','../data/linemod_zhs/000012_test.txt',\
+        '../data/linemod_zhs/000013_test.txt','../data/linemod_zhs/000014_test.txt',\
+        '../data/linemod_zhs/000015_test.txt'\
         ]
     elif mode == 'train':
-        seq_paths = ['../data/linemod/000001_train.txt','../data/linemod/000002_train.txt',\
-        '../data/linemod/000004_train.txt','../data/linemod/000005_train.txt',\
-        '../data/linemod/000006_train.txt','../data/linemod/000008_train.txt',\
-        '../data/linemod/000009_train.txt','../data/linemod/000010_train.txt',\
-        '../data/linemod/000011_train.txt','../data/linemod/000012_train.txt',\
-        '../data/linemod/000013_train.txt','../data/linemod/000014_train.txt',\
-        '../data/linemod/000015_train.txt'
+        seq_paths = ['../data/linemod_zhs/000001_train.txt','../data/linemod_zhs/000002_train.txt',\
+        '../data/linemod_zhs/000004_train.txt','../data/linemod_zhs/000005_train.txt',\
+        '../data/linemod_zhs/000006_train.txt','../data/linemod_zhs/000008_train.txt',\
+        '../data/linemod_zhs/000009_train.txt','../data/linemod_zhs/000010_train.txt',\
+        '../data/linemod_zhs/000011_train.txt','../data/linemod_zhs/000012_train.txt',\
+        '../data/linemod_zhs/000013_train.txt','../data/linemod_zhs/000014_train.txt',\
+        '../data/linemod_zhs/000015_train.txt'
         ]
     else:
         raise RuntimeError("Unsupported mode")
