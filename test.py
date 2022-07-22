@@ -8,10 +8,9 @@ import numpy as np
 import cv2
 import imageio
 from tqdm import tqdm, trange
-from dataset_linemod import LINEMOD_SO3 as LINEMOD
-from dataset_linemod import ref_loader_so3 as ref_loader
-
 from pytorch3d.ops import sample_farthest_points
+from core.dataset import LINEMOD_SO3 as LINEMOD
+from core.dataset import ref_loader_so3 as ref_loader
 from core.model import RetrievalNet as Model
 from core.model import Sim_predictor as Predictor
 from core.utils import geodesic_distance

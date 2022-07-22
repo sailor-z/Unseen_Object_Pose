@@ -12,8 +12,8 @@ from tqdm import tqdm
 import argparse
 from tqdm import trange
 
-from test_linemod_so3 import val
-from core.dataset_linemod import LINEMOD_SO3 as LINEMOD
+from test import val
+from core.dataset import LINEMOD_SO3 as LINEMOD
 from core.loss import weighted_infoNCE_loss_func
 from core.utils import load_checkpoint
 from core.model import RetrievalNet as Model
