@@ -16,7 +16,7 @@ from torchvision.transforms import functional as TF
 from test_linemod_so3 import val
 from pytorch3d.transforms import matrix_to_euler_angles
 from core.dataset_linemod import LINEMOD_SO3 as LINEMOD
-from core.loss import infoNCE_loss_func_ours, weighted_infoNCE_loss_func
+from core.loss import weighted_infoNCE_loss_func
 from core.utils import load_checkpoint
 from core.model import RetrievalNet_FPN as Model
 from core.model import Sim_predictor as Predictor
