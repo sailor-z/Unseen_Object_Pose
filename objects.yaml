@@ -42,10 +42,7 @@ TRAIN:
   WORKING_DIR: "./logs/linemod/"
   FROM_SCRATCH: True
   ROTAION_AG: True
-  ROTAION_CROP: False
   RANDOM_OCC: False
-  RANDOM_BG: True
-  SYNTHETIC: False
   NORM_FUNC: "instance"
   RUNNING_DEVICE: "cuda"
 
