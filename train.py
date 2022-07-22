@@ -139,5 +139,10 @@ if __name__ == '__main__':
     with open("./objects.yaml", 'r') as load_f:
         cfg = yaml.load(load_f, Loader=yaml.FullLoader)
 
-    device = cfg["TRAIN"]["RUNNING_DEVICE"]
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+        torch.cuda.set_device(device)
+    else:
+        device = torch.device("cpu")
+        
     train(cfg, device)
