@@ -273,7 +273,7 @@ class LINEMOD_SO3(data.Dataset):
             ref_Rs = torch.from_numpy(ref_info["Rs"])
 
             if random.random() > 0.5 and self.cfg['TRAIN']['ROTAION_AG'] is True:
-                r = max(-60, min(60, torch.randn() * 30))
+                r = max(-60, min(60, torch.randn(1) * 30))
                 src_img = imutils.rotate_bound(src_img, angle=-r)
                 src_mask = imutils.rotate_bound(src_mask, angle=-r)
                 r = r * np.pi / 180.
