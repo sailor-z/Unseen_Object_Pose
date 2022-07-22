@@ -38,3 +38,11 @@ We generate 10,000 reference images for each object by rendering. The number of 
 
     cd ./Render
     python data_generation.py
+
+# Training
+
+The model can be trained on LineMOD by running:
+
+    python ./train.py
+
+The unseen objects are ```'APE', 'BENCHVISE', 'CAM', 'CAN'``` by default.
