@@ -32,3 +32,9 @@ First please download the LineMOD dataset we used in our experiments from [LineM
         |-- linemod_zhs
             |-- models
             |-- real
+
+### Rendering
+We generate 10,000 reference images for each object by rendering. The number of reference images and data path can be changed by modifying ```cfg["RENDER"]["NUM"]``` and ```cfg["RENDER"]["OUTPUT_PATH"]```, respectively. Please run the following code for rendering:
+
+    cd ./Render
+    python data_generation.py

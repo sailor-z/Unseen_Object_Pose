@@ -1,8 +1,5 @@
 RENDER:
   OUTPUT_PATH: "../data/reference_pool_6d_sample_10000"
-  DISTANCE: 400
-  NUM_LEVEL: 3
-  THETA_STEP: [10, 20]
   NUM: 10000
   CAM_DIST: 4
 MODEL:

@@ -222,7 +222,7 @@ def reference_generation(cfg, mode, num):
             f.close()
 
 if __name__ == '__main__':
-    with open("../configs/objects.yaml", 'r') as load_f:
+    with open("../objects.yaml", 'r') as load_f:
         cfg = yaml.load(load_f, Loader=yaml.FullLoader)
     print("---------- image generation------------")
     src_image_generate(cfg, 'train')
