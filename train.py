@@ -1,6 +1,5 @@
 import os, sys
 import yaml
-import datetime
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +10,6 @@ import cv2
 from tqdm import tqdm
 import argparse
 from tqdm import trange
-
 from test import val
 from core.dataset import LINEMOD_SO3 as LINEMOD
 from core.loss import weighted_infoNCE_loss_func
@@ -88,6 +86,9 @@ def train(cfg, device):
     print(">>>>>>>>>>>>>> CREATE OPTIMIZER")
     optimizer = optim.Adam([{'params': model.parameters()}, {'params': predictor.parameters()}], lr=cfg["TRAIN"]["LR"])
     lrScheduler = optim.lr_scheduler.MultiStepLR(optimizer, cfg["TRAIN"]["STEP"], gamma=cfg["TRAIN"]["GAMMA"])
+
+    if not os.path.exists(cfg["TRAIN"]["WORKING_DIR"]):
+        os.makedirs(cfg["TRAIN"]["WORKING_DIR"])
 
     logname = os.path.join(cfg["TRAIN"]["WORKING_DIR"], 'training_log.txt')
     with open(logname, 'a') as f:
