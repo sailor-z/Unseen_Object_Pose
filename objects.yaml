@@ -48,9 +48,7 @@ TRAIN:
 
 TEST:
   VISUAL: True
-  LDNET: True
   VISUAL_PATH: "./logs/linemod/visual/"
-  THR: 15
   THR_SO3: 30
   INIT_K: 4096
   FPS_K: 256

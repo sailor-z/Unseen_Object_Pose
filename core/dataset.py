@@ -139,7 +139,6 @@ class LINEMOD_SO3(data.Dataset):
     def __init__(self, cfg, mode, clsID):
         self.cfg = cfg
         self.mode = mode
-        self.thr = cfg["TEST"]["THR"]
         self.unseen_cat = [cfg["LINEMOD"][cat] for cat in cfg["TEST"]["UNSEEN"]]
 
         if self.mode == 'train':

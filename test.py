@@ -75,14 +75,7 @@ def fast_retrieval(src_R, src_f, ref_info_clsID, predictor, device, max_iter=5, 
     return pred_index, pred_sim
 
 def test_category(cfg, model, predictor, ref_info, device, objID):
-    if cfg["DATA"]["DATASET"] == 'LINEMOD':
-        if cfg["TRAIN"]["RANDOM_OCC"] is False:
-            dataset_test = LINEMOD(cfg, 'test', objID)
-        else:
-            dataset_test = OCC_LINEMOD(cfg, 'test', objID)
-    elif cfg["DATA"]["DATASET"] == 'YCBV':
-        dataset_test = YCBV(cfg, 'test', objID)
-
+    dataset_test = LINEMOD(cfg, 'test', objID)
     dataset_loader = DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=cfg["TRAIN"]["WORKERS"], drop_last=False)
 
     print(">>>>>>>>>> TESTING DATA of %06d:" % (objID), len(dataset_loader))
@@ -233,10 +226,7 @@ def test(cfg, device):
 
     ref_info = {}
     with torch.no_grad():
-        for cat in cfg["TEST"]["UNSEEN"]:
-            objID = cfg[cfg["DATA"]["DATASET"]][cat]
-            clsID = "%06d" % (objID)
-
+        for clsID in ref_database.ref_info.keys():
             print(">>>>>>>>>>>>>> Estimating features for ref " + clsID)
             ref_info_clsID = ref_database.load(clsID)
             anchors, anchor_indices = sample_farthest_points(ref_info_clsID["Rs"].reshape(1, -1, 9), K=cfg["DATA"]["ANCHOR_NUM"], random_start_point=False)
