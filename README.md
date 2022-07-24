@@ -49,3 +49,5 @@ The model can be trained on LineMOD by running:
     python ./train.py
 
 The unseen objects are ```'APE', 'BENCHVISE', 'CAM', 'CAN'``` by default.
+
+The pretrained models are also available at ```./pretrained_models```.
