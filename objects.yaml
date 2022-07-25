@@ -41,7 +41,7 @@ TRAIN:
   NOISE_R: 2
   WORKING_DIR: "./logs/linemod/"
   FROM_SCRATCH: True
-  ROTAION_AG: True
+  ROTATION_AG: True
   RANDOM_OCC: False
   NORM_FUNC: "instance"
   RUNNING_DEVICE: "cuda"

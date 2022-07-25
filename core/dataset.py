@@ -271,7 +271,7 @@ class LINEMOD_SO3(data.Dataset):
             ref_bbxs = np.array(ref_info["bbxs"])
             ref_Rs = torch.from_numpy(ref_info["Rs"])
 
-            if random.random() > 0.5 and self.cfg['TRAIN']['ROTAION_AG'] is True:
+            if random.random() > 0.5 and self.cfg['TRAIN']['ROTATION_AG'] is True:
                 r = max(-60, min(60, torch.randn(1) * 30))
                 src_img = imutils.rotate_bound(src_img, angle=-r)
                 src_mask = imutils.rotate_bound(src_mask, angle=-r)
