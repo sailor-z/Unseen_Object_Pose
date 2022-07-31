@@ -8,12 +8,12 @@ import numpy as np
 import cv2
 import imageio
 from tqdm import tqdm, trange
-from pytorch3d.ops import sample_farthest_points
-from core.dataset import LINEMOD_SO3 as LINEMOD
-from core.dataset import ref_loader_so3 as ref_loader
 from core.model import RetrievalNet as Model
 from core.model import Sim_predictor as Predictor
+from core.dataset import LINEMOD_SO3 as LINEMOD
+from core.dataset import ref_loader_so3 as ref_loader
 from core.utils import geodesic_distance
+from pytorch3d.ops import sample_farthest_points
 
 np.set_printoptions(threshold=np.inf)
 np.random.seed(0)
@@ -41,11 +41,70 @@ def visual(cfg, src_img, ref_img, gt_ref_img):
     gt_ref_img = (255*gt_ref_img).astype(np.uint8)
 
     h, w, _ = src_img.shape
-    viz_img = np.concatenate([src_img, gt_ref_img, ref_img], axis=1)
+    viz_img = np.zeros([h, 3*w, 3]).astype(np.uint8)
 
+    viz_img[:, :w, :] = src_img
+    viz_img[:, w:2*w, :] = gt_ref_img
+    viz_img[:, 2*w:, :] = ref_img
     return viz_img
 
-def fast_retrieval(src_R, src_f, ref_info_clsID, predictor, device, max_iter=5, init_K=4096, fps_k=256, shrink_ratio=2):
+def val(cfg, model, predictor, device):
+    model.eval()
+    predictor.eval()
+    print(">>>>>>>>>>>>>> Loading reference database")
+    ref_database = ref_loader(cfg)
+
+    ref_info = {}
+    with torch.no_grad():
+        for clsID in ref_database.ref_info.keys():
+            print(">>>>>>>>>>>>>> Estimating features for ref " + clsID)
+            ref_info_clsID = ref_database.load(clsID)
+            anchors, anchor_indices = sample_farthest_points(ref_info_clsID["Rs"].view(1, -1, 9), K=cfg["DATA"]["ANCHOR_NUM"], random_start_point=False)
+            anchors, anchor_indices = anchors[0], anchor_indices[0]
+
+            ref_info_clsID["anchors"] = anchors.to(device)
+            ref_info_clsID["indices"] = anchor_indices.to(device)
+            ref_info_clsID["Rs"] = ref_info_clsID["Rs"].to(device)
+            ref_info_clsID["ref_f"] = []
+
+            ref_imgs = ref_info_clsID["imgs"]
+            for i in trange(ref_imgs.shape[0]):
+                ref_img = ref_imgs[i][None].to(device)
+                ref_f = model(ref_img)
+                ref_f = [ref_f[j].cpu().detach() for j in range(len(ref_f))]
+                ref_info_clsID["ref_f"].append(ref_f)
+
+            del ref_img, ref_imgs, ref_f
+            torch.cuda.empty_cache()
+
+            ref_info_clsID["anchor_f"] = []
+            for j in range(len(ref_info_clsID["ref_f"][0])):
+                ref_info_clsID["anchor_f"].append(torch.cat([ref_info_clsID["ref_f"][idx][j].to(device) for idx in ref_info_clsID["indices"]], dim=0))
+
+            ref_info[clsID] = ref_info_clsID
+
+    if cfg["TEST"]["VISUAL"] is True:
+        if not os.path.exists(cfg["TEST"]["VISUAL_PATH"]):
+            os.makedirs(cfg["TEST"]["VISUAL_PATH"])
+
+    print(">>>>>>>>>>>>>> START TESTING")
+    test_cat_acc_all, test_R_acc_all = [], []
+    for cat in cfg["TEST"]["UNSEEN"]:
+        objID = cfg[cfg["DATA"]["DATASET"]][cat]
+
+        test_cat_acc, test_R_acc = test_category(cfg, model, predictor, ref_info, device, objID)
+
+        test_cat_acc_all += [test_cat_acc]
+        test_R_acc_all += [test_R_acc]
+
+    test_cat_acc_all = np.asarray(test_cat_acc_all).mean()
+    test_R_acc_all = np.asarray(test_R_acc_all).mean()
+
+    print('All categories -- || Testing Cls Acc: %.2f || Testing R Acc: %.2f' % (test_cat_acc_all, test_R_acc_all))
+
+    return [test_R_acc_all, test_cat_acc_all]
+
+def iterative_retrieval(src_R, src_f, ref_info_clsID, predictor, device, max_iter=5, init_K=4096, fps_k=256, shrink_ratio=2):
     pred_sims = predictor(src_f, ref_info_clsID["anchor_f"]).squeeze(0)
     pred_index = torch.argmax(pred_sims)
 
@@ -84,7 +143,7 @@ def test_category(cfg, model, predictor, ref_info, device, objID):
         filename_output = cfg["TEST"]["VISUAL_PATH"] + '/%06d.gif' % (objID)
         writer = imageio.get_writer(filename_output, mode='I', duration=1.0)
 
-    test_cls_acc, test_R_acc, test_errs, gt_errs = [], [], [], []
+    test_cat_acc, test_R_acc, test_errs, gt_errs = [], [], [], []
     with torch.no_grad():
         for i, data in enumerate(tqdm(dataset_loader)):
             # load data and label
@@ -95,6 +154,8 @@ def test_category(cfg, model, predictor, ref_info, device, objID):
             src_f = model(src_img)
 
             '''Category prediction'''
+            gt_clsID = "%06d" % (id)
+
             anchor_sims = []
             for clsID in ref_info.keys():
                 pred_sims = predictor(src_f, ref_info[clsID]["anchor_f"]).squeeze(0)
@@ -102,11 +163,10 @@ def test_category(cfg, model, predictor, ref_info, device, objID):
             pred_cls_index = torch.argmax(torch.stack(anchor_sims))
             pred_clsID = list(ref_info)[pred_cls_index]
 
-            '''Retrieval'''
-            pred_index, pred_sim = fast_retrieval(src_R, src_f, ref_info[pred_clsID], predictor, device, \
+            '''Fast Retrieval'''
+            pred_index, pred_sim = iterative_retrieval(src_R, src_f, ref_info[pred_clsID], predictor, device, \
             max_iter=4, init_K=cfg["TEST"]["INIT_K"], fps_k=cfg["TEST"]["FPS_K"], shrink_ratio=2)
 
-            gt_clsID = "%06d" % (id)
             ref_sim, ref_err = geodesic_distance(src_R, ref_info[gt_clsID]["Rs"])
 
             gt_index = torch.argmin(ref_err).item()
@@ -116,11 +176,10 @@ def test_category(cfg, model, predictor, ref_info, device, objID):
 
             cls_acc = int(pred_clsID == gt_clsID)
 
-            test_cls_acc.append(cls_acc)
+            test_cat_acc.append(cls_acc)
             test_errs.append(pred_err)
             test_R_acc.append(float(pred_err <= cfg["TEST"]["THR_SO3"]) * cls_acc)
             gt_errs.append(gt_err)
-
             if i % 20 == 0:
                 if cfg["TEST"]["VISUAL"] is True:
                     ref_img_pred = ref_info[pred_clsID]["imgs"][pred_index]
@@ -131,70 +190,13 @@ def test_category(cfg, model, predictor, ref_info, device, objID):
         if cfg["TEST"]["VISUAL"] is True:
             writer.close()
 
-        test_cls_acc = 100 * np.asarray(test_cls_acc).mean()
+        test_cat_acc = 100 * np.asarray(test_cat_acc).mean()
         test_R_acc = 100 * np.asarray(test_R_acc).mean()
         test_errs = np.asarray(test_errs).mean()
         gt_errs = np.asarray(gt_errs).mean()
-        print('Category: %02d -- || GT Err: %.2f || Test Err: %.2f || Testing Cls Acc: %.2f || Testing R Acc: %.2f' % \
-        (objID, gt_errs, test_errs, test_cls_acc, test_R_acc))
-        return test_cls_acc, test_R_acc
-
-def val(cfg, model, predictor, device):
-    model.eval()
-    predictor.eval()
-
-    print(">>>>>>>>>>>>>> Loading reference database")
-    ref_database = ref_loader(cfg)
-
-    ref_info = {}
-    with torch.no_grad():
-        for clsID in ref_database.ref_info.keys():
-            print(">>>>>>>>>>>>>> Estimating features for ref " + clsID)
-            ref_info_clsID = ref_database.load(clsID)
-            anchors, anchor_indices = sample_farthest_points(ref_info_clsID["Rs"].view(1, -1, 9), K=cfg["DATA"]["ANCHOR_NUM"], random_start_point=False)
-            anchors, anchor_indices = anchors[0], anchor_indices[0]
-
-            ref_info_clsID["anchors"] = anchors.to(device)
-            ref_info_clsID["indices"] = anchor_indices.to(device)
-            ref_info_clsID["Rs"] = ref_info_clsID["Rs"].to(device)
-            ref_info_clsID["ref_f"] = []
-
-            ref_imgs = ref_info_clsID["imgs"]
-            for i in trange(ref_imgs.shape[0]):
-                ref_img = ref_imgs[i][None].to(device)
-                ref_f = model(ref_img)
-                ref_f = [ref_f[j].cpu().detach() for j in range(len(ref_f))]
-                ref_info_clsID["ref_f"].append(ref_f)
-
-            del ref_img, ref_imgs, ref_f
-            torch.cuda.empty_cache()
-
-            ref_info_clsID["anchor_f"] = []
-            for j in range(len(ref_info_clsID["ref_f"][0])):
-                ref_info_clsID["anchor_f"].append(torch.cat([ref_info_clsID["ref_f"][idx][j].to(device) for idx in ref_info_clsID["indices"]], dim=0))
-
-            ref_info[clsID] = ref_info_clsID
-
-    if cfg["TEST"]["VISUAL"] is True:
-        if not os.path.exists(cfg["TEST"]["VISUAL_PATH"]):
-            os.makedirs(cfg["TEST"]["VISUAL_PATH"])
-
-    print(">>>>>>>>>>>>>> START TESTING")
-    test_cls_acc_all, test_R_acc_all = [], []
-    for cat in cfg["TEST"]["UNSEEN"]:
-        objID = cfg[cfg["DATA"]["DATASET"]][cat]
-
-        test_cls_acc, test_R_acc = test_category(cfg, model, predictor, ref_info, device, objID)
-
-        test_cls_acc_all += [test_cls_acc]
-        test_R_acc_all += [test_R_acc]
-
-    test_cls_acc_all = np.asarray(test_cls_acc_all).mean()
-    test_R_acc_all = np.asarray(test_R_acc).mean()
-
-    print('All categories -- || Testing Cls Acc: %.2f || Testing R Acc: %.2f' % (test_cls_acc_all, test_R_acc_all))
-
-    return [test_R_acc_all, test_cls_acc_all]
+        print('Category: %02d -- || GT Err: %.2f || Test Err: %.2f || Testing Classifcation Acc: %.2f || Testing R1: %.2f' % \
+        (objID, gt_errs, test_errs, test_cat_acc, test_R_acc))
+        return test_cat_acc, test_R_acc
 
 def test(cfg, device):
     if not os.path.exists(cfg["TRAIN"]["WORKING_DIR"]):
@@ -223,8 +225,8 @@ def test(cfg, device):
 
     print(">>>>>>>>>>>>>> Loading reference database")
     ref_database = ref_loader(cfg)
-
     ref_info = {}
+
     with torch.no_grad():
         for clsID in ref_database.ref_info.keys():
             print(">>>>>>>>>>>>>> Estimating features for ref " + clsID)
@@ -254,23 +256,23 @@ def test(cfg, device):
             ref_info[clsID] = ref_info_clsID
 
 
-    test_cls_acc_all, test_R_acc_all = [], []
+    test_cat_acc_all, test_R_acc_all = [], []
     for cat in cfg["TEST"]["UNSEEN"]:
         objID = cfg[cfg["DATA"]["DATASET"]][cat]
-        test_cls_acc, test_R_acc = test_category(cfg, model, predictor, ref_info, device, objID)
+        test_cat_acc, test_R_acc = test_category(cfg, model, predictor, ref_info, device, objID)
 
-        test_cls_acc_all += [test_cls_acc]
+        test_cat_acc_all += [test_cat_acc]
         test_R_acc_all += [test_R_acc]
 
         with open(logname, 'a') as f:
-            f.write('objID: %02d -- || Testing Cls Acc: %.2f || Testing R Acc: %.2f\n' % (objID, test_cls_acc, test_R_acc))
+            f.write('objID: %02d -- || Testing Cls: %.2f || Testing R Acc: %.2f\n' % (objID, test_cat_acc, test_R_acc))
         f.close()
 
-    test_cls_acc_all = np.asarray(test_cls_acc_all).mean()
+    test_cat_acc_all = np.asarray(test_cat_acc_all).mean()
     test_R_acc_all = np.asarray(test_R_acc_all).mean()
 
     with open(logname, 'a') as f:
-        f.write('All categories -- || Testing Cls Acc: %.2f || Testing R Acc: %.2f\n' % (test_cls_acc_all, test_R_acc_all))
+        f.write('All categories -- || Testing Cls Acc: %.2f || Testing R Acc: %.2f\n' % (test_cat_acc_all, test_R_acc_all))
     f.close()
 
 if __name__ == '__main__':
