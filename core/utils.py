@@ -127,6 +127,24 @@ def get_single_bop_annotation(img_path, objID_2_clsID):
 
     return K, merged_mask, class_ids, rotations, translations
 
+def remap_pose(srcK, srcR, srcT, pt3d, dstK):
+    ptCnt = len(pt3d)
+    pts = np.matmul(srcK, np.matmul(srcR, pt3d.transpose()) + srcT)
+    xs = pts[0] / (pts[2] + 1e-12)
+    ys = pts[1] / (pts[2] + 1e-12)
+    xy2d = np.concatenate((xs.reshape(-1,1),ys.reshape(-1,1)), axis=1)
+
+    #retval, rot, trans, inliers = cv2.solvePnPRansac(pt3d, xy2d, dstK, None, flags=cv2.SOLVEPNP_EPNP, reprojectionError=5.0)
+    retval, rot, trans = cv2.solvePnP(pt3d.reshape(ptCnt,1,3), xy2d.reshape(ptCnt,1,2), dstK, None, flags=cv2.SOLVEPNP_EPNP)
+    if retval:
+        newR = cv2.Rodrigues(rot)[0]  # convert to rotation matrix
+        newT = trans.reshape(-1, 1)
+
+        return newR, newT
+    else:
+        print('Error in pose remapping!')
+        return srcR, srcT
+        
 def pose_symmetry_handling(R, sym_types):
     if len(sym_types) == 0:
         return R, T
